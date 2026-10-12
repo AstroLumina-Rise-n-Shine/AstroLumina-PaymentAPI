@@ -202,8 +202,8 @@ Node Version:    22.x
 Images are automatically built and pushed to GitHub Container Registry:
 
 ```
-ghcr.io/astrolumina-by-carmen-ilie/astrolumina-paymentapi:latest
-ghcr.io/astrolumina-by-carmen-ilie/astrolumina-paymentapi:v1.0.0
+ghcr.io/astrolumina-rise-n-shine/astrolumina-paymentapi:latest
+ghcr.io/astrolumina-rise-n-shine/astrolumina-paymentapi:v1.0.0
 ```
 
 ### CI/CD Pipeline
