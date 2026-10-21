@@ -21,9 +21,12 @@
 # Security (GHAS). Without it, SARIF uploads are skipped by GitHub —
 # Semgrep / npm audit / Trivy / ZAP results (logs + artifacts) still work.
 #
-# The workflow is REPORT-ONLY on purpose: it never fails on findings.
-# To gate merges, enforce this workflow as a required status check and/or flip
-# the Trivy `exit-code` inputs from '0' to '1'.
+# The workflow is BLOCKING: every scan fails the workflow on findings.
+# Semgrep uses `--error`, npm audit fails at `--audit-level=moderate`,
+# Trivy runs with `exit-code: "1"`, and ZAP baseline failures (with `-I`
+# warnings stay non-blocking) fail the DAST job. Keep this workflow as a
+# required status check to enforce the gates. Scan reports are uploaded
+# with `if: always()` so artifacts and SARIF survive failures.
 # =============================================================================
 
 name: Security Scan
@@ -68,18 +71,22 @@ jobs:
           python-version: "3.x"
 
       - name: Install Semgrep
+        # Pinned to the version validated locally for these rules (newer
+        # semgrep-core releases have crashed with `-11` on the runner).
         run: |
           python -m venv /tmp/semgrep-venv
-          /tmp/semgrep-venv/bin/pip install --quiet semgrep
+          /tmp/semgrep-venv/bin/pip install --quiet semgrep==1.182.0
 
-      - name: Semgrep scan (report only)
+      - name: Semgrep scan (blocking — fails on findings)
         # Explicit ruleset `p/default`: `--config auto` refuses to run with
-        # metrics off, and metrics stay off here. Findings exit non-zero,
-        # which is not a failure (see continue-on-error).
-        continue-on-error: true
+        # metrics off, and metrics stay off here. `--error` makes any
+        # finding fail the scan (and the workflow).
+        # `--jobs 2` avoids oversubscribing the 4-vCPU runner (default is 7
+        # shared-memory threads); oversubscription has caused intermittent
+        # `semgrep-core exited with -11!` crashes here.
         env:
           SEMGREP_SEND_METRICS: off
-        run: /tmp/semgrep-venv/bin/semgrep scan --config p/default --sarif --output semgrep.sarif
+        run: /tmp/semgrep-venv/bin/semgrep scan --config p/default --error --sarif --jobs 2 --output semgrep.sarif
 
       - name: Upload SARIF to code scanning
         uses: github/codeql-action/upload-sarif@d8073367669608af8fbcc5f63dd0a0d52bb90cff # v4
@@ -107,10 +114,12 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
 
-      - name: npm audit (report only)
-        run: |
-          npm audit --audit-level=moderate || true
-          npm audit --audit-level=moderate --json > npm-audit.json || true
+      - name: npm audit (blocking — fails on moderate+ findings)
+        run: npm audit --audit-level=moderate
+
+      - name: npm audit report (always, for the artifact)
+        if: always()
+        run: npm audit --audit-level=moderate --json > npm-audit.json || true
 
       - name: Upload npm audit report
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
@@ -120,7 +129,7 @@ jobs:
           path: npm-audit.json
           retention-days: 30
 
-      - name: Trivy repo scan — vuln, secrets, misconfig (report only)
+      - name: Trivy repo scan — vuln, secrets, misconfig (blocking, exit-code 1)
         uses: aquasecurity/trivy-action@a9c7b0f06e461e9d4b4d1711f154ee024b8d7ab8 # v0.36.0, SHA-pinned (supply-chain safety)
         with:
           scan-type: fs
@@ -130,7 +139,7 @@ jobs:
           limit-severities-for-sarif: 'true'
           format: sarif
           output: trivy-fs.sarif
-          exit-code: "0"
+          exit-code: "1"
 
       - name: Upload Trivy repo SARIF to code scanning
         uses: github/codeql-action/upload-sarif@d8073367669608af8fbcc5f63dd0a0d52bb90cff # v4
@@ -163,7 +172,7 @@ jobs:
           load: true
           tags: payment-api:security-scan
 
-      - name: Trivy image scan (report only)
+      - name: Trivy image scan (blocking, exit-code 1)
         uses: aquasecurity/trivy-action@a9c7b0f06e461e9d4b4d1711f154ee024b8d7ab8 # v0.36.0, SHA-pinned (supply-chain safety)
         with:
           scan-type: image
@@ -173,7 +182,7 @@ jobs:
           limit-severities-for-sarif: 'true'
           format: sarif
           output: trivy-image.sarif
-          exit-code: "0"
+          exit-code: "1"
 
       - name: Upload Trivy image SARIF to code scanning
         uses: github/codeql-action/upload-sarif@d8073367669608af8fbcc5f63dd0a0d52bb90cff # v4
@@ -255,10 +264,10 @@ jobs:
           cat api.log
           exit 1
 
-      - name: OWASP ZAP baseline scan (report only)
-        # ZAP exits non-zero on findings — findings are not failures here.
-        # --network host lets the ZAP container reach the API on localhost.
-        continue-on-error: true
+      - name: OWASP ZAP baseline scan (blocking — only failures fail; -I keeps warnings visible in the reports)
+        # ZAP exits non-zero on failed rules; with -I warnings are shown in
+        # the report but do not block. --network host lets the ZAP container
+        # reach the API on localhost.
         run: |
           mkdir -p zap-reports
           chmod 777 zap-reports
@@ -267,6 +276,7 @@ jobs:
             -v "${{ github.workspace }}/zap-reports:/zap/wrk:rw" \
             ghcr.io/zaproxy/zaproxy:stable \
             zap-baseline.py \
+              -I \
               -t "http://localhost:${PAYMENT_API_SERVER_PORT}" \
               -r baseline-report.html \
               -J baseline-report.json

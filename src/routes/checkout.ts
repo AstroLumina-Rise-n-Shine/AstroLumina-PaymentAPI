@@ -10,6 +10,7 @@ import { env } from "../config/env.js";
 import { getProduct, getAvailableProducts } from "../types/products.js";
 import { Sentry } from "../instrument.js";
 import { createError } from "../middleware/error-handler.js";
+import { strictRateLimiter } from "../middleware/security.js";
 
 const router = Router();
 
@@ -17,9 +18,39 @@ const stripe = new Stripe(env.STRIPE_SK, {
   apiVersion: env.STRIPE_API_VER as Stripe.LatestApiVersion,
 });
 
-// Validation schema
+// Validation schema — product keys are short, fixed catalog slugs.
 const productParamSchema = z.object({
-  product: z.string().min(1, "Product key is required"),
+  product: z.string().min(1, "Product key is required").max(64),
+});
+
+// Checkout body validation. ticketCount is bound to a Stripe quantity
+// (product-specific inventory, bounded at 20), eventId flows into Stripe
+// metadata (bounded and stripped of CR/LF so it can never forge headers or
+// bloat metadata). Unknown properties keep being ignored to match the
+// existing client contract.
+const checkoutBodySchema = z.object({
+  ticketCount: z.coerce
+    .number()
+    .int()
+    .min(1, "ticketCount must be at least 1")
+    .max(20, "ticketCount must be at most 20")
+    .default(1),
+  eventId: z
+    .string()
+    .min(1)
+    .max(100)
+    // Reject CR/LF and other control characters outright.
+    .regex(/^[^\r\n\u0000-\u001f\u007f]*$/, "eventId contains invalid characters")
+    .optional(),
+});
+
+// Stripe session IDs look like "cs_test_<id>" / "cs_live_<id>" and are
+// well under 255 characters.
+const sessionQuerySchema = z.object({
+  session_id: z
+    .string()
+    .min(1, "session_id is required")
+    .max(255, "session_id is too long"),
 });
 
 /**
@@ -27,9 +58,14 @@ const productParamSchema = z.object({
  *
  * Unified endpoint for all product types.
  * For 'eveniment-constelatii', accepts ticketCount in body.
+ *
+ * Strictly rate-limited: creating checkout sessions triggers a Stripe
+ * API call, so abusive hammering must back off well before the global
+ * 30 req/min limiter intervenes.
  */
 router.post(
   "/create-checkout-session/:product",
+  strictRateLimiter,
   async (req: Request, res: Response, next: NextFunction) => {
     const SentryInstance = Sentry;
 
@@ -39,6 +75,15 @@ router.post(
       if (!parseResult.success) {
         throw createError(400, "Missing product parameter");
       }
+
+      // Validate body (ticketCount/eventId); malformed values are
+      // rejected, unknown properties keep being ignored.
+      const bodyResult = checkoutBodySchema.safeParse(req.body ?? {});
+      if (!bodyResult.success) {
+        throw createError(400, "Invalid checkout request body");
+      }
+      const ticketCount = bodyResult.data.ticketCount;
+      const eventId = bodyResult.data.eventId;
 
       const productKey = parseResult.data.product;
       const product = getProduct(productKey);
@@ -50,10 +95,6 @@ router.post(
           `Unknown product "${productKey}". Available products: ${available.join(", ")}`,
         );
       }
-
-      // Get ticketCount from body for constellation events
-      const ticketCount = req.body?.ticketCount ?? 1;
-      const eventId = req.body?.eventId;
 
       SentryInstance.setContext("checkout", {
         product: productKey,
@@ -93,9 +134,6 @@ router.post(
  *
  * Retrieve the status of a Stripe checkout session.
  */
-const sessionQuerySchema = z.object({
-  session_id: z.string().min(1, "session_id is required"),
-});
 
 router.get(
   "/session-status",

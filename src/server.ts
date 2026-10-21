@@ -7,6 +7,8 @@ import morgan from "morgan";
 import { env } from "./config/env.js";
 import {
   securityHeaders,
+  permissionsPolicy,
+  originGuard,
   corsMiddleware,
   rateLimiter,
 } from "./middleware/security.js";
@@ -25,6 +27,9 @@ const app = express();
 
 app.set("trust proxy", 1);
 
+// Hide framework fingerprinting via the X-Powered-By header.
+app.disable("x-powered-by");
+
 // ─── Metrics ─────────────────────────────────────────────────
 // Registered before the security middlewares so Prometheus scrapes are
 // never rate-limited nor CORS-filtered. Reachable only in-cluster (the
@@ -34,6 +39,10 @@ app.use(metricsMiddleware);
 
 // ─── Security ────────────────────────────────────────────────
 app.use(securityHeaders);
+app.use(permissionsPolicy);
+// Strict origin guard: must run before cors() so disallowed (but
+// present) Origin headers get a plain 403 instead of CORS filtering.
+app.use(originGuard);
 app.use(corsMiddleware);
 app.use(rateLimiter);
 
@@ -44,7 +53,21 @@ app.use(compression());
 app.use(morgan(isProduction ? "combined" : "dev"));
 
 // ─── Body parser ─────────────────────────────────────────────
-app.use(express.json({ limit: "1mb" }));
+// 256kb is a hard upper bound for this API. There is deliberately no
+// dedicated raw-body parser for Stripe webhooks: this service does not
+// expose a webhook route at all (Stripe checkout sessions are verified
+// client-side via /session-status), so the small global limit never
+// conflicts with signature verification. If a webhook route is ever
+// added, mount a raw parser for it before this parser instead of
+// raising the global limit — see the security-hardening spec.
+app.use(express.json({ limit: "256kb" }));
+
+// ─── Robots ──────────────────────────────────────────────────
+// Publicly disallow crawling of the API surface (served as plain text,
+// before the routers and the 404 handler).
+app.get("/robots.txt", (_req, res) => {
+  res.type("text/plain").send("User-agent: *\nDisallow: /\n");
+});
 
 // ─── Routes ──────────────────────────────────────────────────
 app.use(healthRouter);
