@@ -71,9 +71,11 @@ jobs:
           python-version: "3.x"
 
       - name: Install Semgrep
+        # Pinned to the version validated locally for these rules (newer
+        # semgrep-core releases have crashed with `-11` on the runner).
         run: |
           python -m venv /tmp/semgrep-venv
-          /tmp/semgrep-venv/bin/pip install --quiet semgrep
+          /tmp/semgrep-venv/bin/pip install --quiet semgrep==1.182.0
 
       - name: Semgrep scan (blocking — fails on findings)
         # Explicit ruleset `p/default`: `--config auto` refuses to run with
