@@ -81,12 +81,15 @@ jobs:
         # Explicit ruleset `p/default`: `--config auto` refuses to run with
         # metrics off, and metrics stay off here. `--error` makes any
         # finding fail the scan (and the workflow).
-        # `--jobs 2` avoids oversubscribing the 4-vCPU runner (default is 7
-        # shared-memory threads); oversubscription has caused intermittent
-        # `semgrep-core exited with -11!` crashes here.
+        # `--jobs 1` is the stable setting on the 4-vCPU runner. Parallel
+        # jobs (2+) share memory across semgrep-core processes and have
+        # crashed intermittently (`semgrep-core exited with -11`, i.e.
+        # SIGSEGV) before any rules even loaded — the code scanning
+        # analysis then showed 0 rules. A single job is slower but has
+        # been crash-free here.
         env:
           SEMGREP_SEND_METRICS: off
-        run: /tmp/semgrep-venv/bin/semgrep scan --config p/default --error --sarif --jobs 2 --output semgrep.sarif
+        run: /tmp/semgrep-venv/bin/semgrep scan --config p/default --error --sarif --jobs 1 --output semgrep.sarif
 
       - name: Upload SARIF to code scanning
         uses: github/codeql-action/upload-sarif@d8073367669608af8fbcc5f63dd0a0d52bb90cff # v4
