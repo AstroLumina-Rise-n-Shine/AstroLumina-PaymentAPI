@@ -1,20 +1,8 @@
 # AstroLumina-PaymentAPI
 
-> **Documentația completă a proiectului se află în [Wiki](https://github.com/AstroLumina-Rise-n-Shine/AstroLumina-PaymentAPI/wiki).**
->
-> Acest fișier conține doar o referință rapidă. Toate detaliile arhitecturale, ghidurile de deployment, configurațiile de securitate și diagramele Mermaid sunt publicate în Wiki pentru o navigare ușoară și versionare istorică.
+Stateless Stripe Embedded Checkout API for AstroLumina. See the [project Wiki](https://github.com/AstroLumina-Rise-n-Shine/AstroLumina-PaymentAPI/wiki) for:
 
----
-
-## Quick Links
-
-- [Wiki Home](https://github.com/AstroLumina-Rise-n-Shine/AstroLumina-PaymentAPI/wiki)
-- [Architecture](https://github.com/AstroLumina-Rise-n-Shine/AstroLumina-PaymentAPI/wiki/Architecture) (dacă există)
-- [Development](https://github.com/AstroLumina-Rise-n-Shine/AstroLumina-PaymentAPI/wiki/Development) (dacă există)
-- [Deployment](https://github.com/AstroLumina-Rise-n-Shine/AstroLumina-PaymentAPI/wiki/Deployment) (dacă există)
-- [Security](https://github.com/AstroLumina-Rise-n-Shine/AstroLumina-PaymentAPI/wiki/Security) (dacă există)
-
----
-
-*Ultima actualizare: 2026-10-23*
-
+- [Architecture](https://github.com/AstroLumina-Rise-n-Shine/AstroLumina-PaymentAPI/wiki/Architecture)
+- [Development](https://github.com/AstroLumina-Rise-n-Shine/AstroLumina-PaymentAPI/wiki/Development)
+- [Security](https://github.com/AstroLumina-Rise-n-Shine/AstroLumina-PaymentAPI/wiki/Security)
+- [Deployment](https://github.com/AstroLumina-Rise-n-Shine/AstroLumina-PaymentAPI/wiki/Deployment)
