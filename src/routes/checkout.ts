@@ -19,7 +19,7 @@ const stripe = new Stripe(env.STRIPE_SK, {
 });
 
 // Validation schema — product keys are short, fixed catalog slugs.
-const productParamSchema = z.object({
+export const productParamSchema = z.object({
   product: z.string().min(1, "Product key is required").max(64),
 });
 
@@ -28,7 +28,7 @@ const productParamSchema = z.object({
 // metadata (bounded and stripped of CR/LF so it can never forge headers or
 // bloat metadata). Unknown properties keep being ignored to match the
 // existing client contract.
-const checkoutBodySchema = z.object({
+export const checkoutBodySchema = z.object({
   ticketCount: z.coerce
     .number()
     .int()
@@ -46,7 +46,7 @@ const checkoutBodySchema = z.object({
 
 // Stripe session IDs look like "cs_test_<id>" / "cs_live_<id>" and are
 // well under 255 characters.
-const sessionQuerySchema = z.object({
+export const sessionQuerySchema = z.object({
   session_id: z
     .string()
     .min(1, "session_id is required")
