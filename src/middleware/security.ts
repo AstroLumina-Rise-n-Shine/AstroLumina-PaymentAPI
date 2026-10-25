@@ -46,7 +46,7 @@ export const permissionsPolicy = (
 // Strip trailing slashes without a regex: strictly linear in the
 // input length, so untrusted header values can never trigger
 // catastrophic backtracking (ReDoS).
-function stripTrailingSlashes(value: string): string {
+export function stripTrailingSlashes(value: string): string {
   let end = value.length;
   while (end > 0 && value.charCodeAt(end - 1) === 47) end -= 1;
   return value.slice(0, end);
@@ -56,7 +56,7 @@ function stripTrailingSlashes(value: string): string {
 // trailing slash and keep only http/https URLs. Returns the URL
 // origin (host lowercased, default ports removed) or null when the
 // value is not a valid http/https URL.
-function normalizeOrigin(origin: string): string | null {
+export function normalizeOrigin(origin: string): string | null {
   const trimmed = stripTrailingSlashes(origin.trim());
   if (!trimmed) return null;
   try {
