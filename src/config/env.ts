@@ -17,27 +17,10 @@ const envSchema = z.object({
 
   CORS_ORIGINS: z.string().optional(),
 
-  STRIPE_SK: z.string().min(1, "STRIPE_SK is required"),
-  STRIPE_API_VER: z.string().min(1, "STRIPE_API_VER is required"),
-
-  STRIPE_SOARELE_STRALUCIREA_TA: z
-    .string()
-    .startsWith("price_", "Must be a valid Stripe price ID"),
-  STRIPE_GHID_SATURN_IN_BERBEC: z
-    .string()
-    .startsWith("price_", "Must be a valid Stripe price ID"),
-  STRIPE_ASTROGRAMA_NATALA_SI_KARMICA: z
-    .string()
-    .startsWith("price_", "Must be a valid Stripe price ID"),
-  STRIPE_ASTROGRAMA_RELATIONALA: z
-    .string()
-    .startsWith("price_", "Must be a valid Stripe price ID"),
-  STRIPE_ASTROGRAMA_PREVIZIONALA: z
-    .string()
-    .startsWith("price_", "Must be a valid Stripe price ID"),
-  STRIPE_EVENIMENT_CONSTELATII: z
-    .string()
-    .startsWith("price_", "Must be a valid Stripe price ID"),
+  // Revolut Pay credentials — only secret key + API version needed server-side.
+  // Public key lives in the frontend config.
+  REVOLUT_PAY_SECRET_KEY: z.string().min(1, "REVOLUT_PAY_SECRET_KEY is required"),
+  REVOLUT_PAY_API_VERSION: z.string().min(1, "REVOLUT_PAY_API_VERSION is required"),
 
   ASTROLOGY_API_SERVER_DC_PORT: z.coerce
     .number()

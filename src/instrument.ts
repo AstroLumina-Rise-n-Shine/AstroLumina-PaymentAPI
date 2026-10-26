@@ -27,7 +27,7 @@ if (env.PAYMENT_API_SENTRY_DSN) {
 
     tracePropagationTargets: [
       "localhost",
-      /^https:\/\/api\.stripe\.com/,
+      /^https:\/\/merchant\.revolut\.com/,
       /^https:\/\/astrolumina\.pages\.dev/,
       /^https:\/\/develop\.astrolumina\.pages\.dev/,
       /^https:\/\/.*\.astrolumina\.com/,
@@ -51,8 +51,8 @@ if (env.PAYMENT_API_SENTRY_DSN) {
             exception.value = exception.value
               .replace(/sk_[a-zA-Z0-9_]+/g, "sk_[REDACTED]")
               .replace(
-                /STRIPE_SK['":\s]*['"]?[\w-]+['"]?/gi,
-                "STRIPE_SK=[REDACTED]",
+                /REVOLUT_PAY_SECRET_KEY['":\s]*['"]?[\w-]+['"]?/gi,
+                "REVOLUT_PAY_SECRET_KEY=[REDACTED]",
               );
           }
         }

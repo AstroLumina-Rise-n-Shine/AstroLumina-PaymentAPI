@@ -299,9 +299,9 @@ jobs:
   # ─────────────────────────────────────────────────────────────────────────
   # 3. DYNAMIC — boot the API, run OWASP ZAP baseline scan against it
   #
-  # The app validates env strictly (zod) but never calls Stripe/Sentry at
+  # The app validates env strictly (zod) but never calls Revolut Pay/Sentry at
   # boot, so syntactically-valid dummy values are enough for a baseline
-  # crawl of: GET /health, GET /products, GET /session-status, 404 handling.
+  # crawl of: GET /health, POST /create-order, 404 handling.
   # ─────────────────────────────────────────────────────────────────────────
 
   dast-zap:
@@ -315,15 +315,9 @@ jobs:
       PAYMENT_API_SERVER_PORT: "3000"
       # Dummy but URL-valid DSN — SDK init succeeds, events go nowhere.
       PAYMENT_API_SENTRY_DSN: https://00000000000000000000000000000000@o0.ingest.sentry.io/0
-      # Dummy Stripe values — satisfy the zod schema; no charge possible.
-      STRIPE_SK: sk_test_dummy_key_for_ci_scan_only
-      STRIPE_API_VER: 2025-08-27.basil
-      STRIPE_SOARELE_STRALUCIREA_TA: price_00000000000000
-      STRIPE_GHID_SATURN_IN_BERBEC: price_00000000000000
-      STRIPE_ASTROGRAMA_NATALA_SI_KARMICA: price_00000000000000
-      STRIPE_ASTROGRAMA_RELATIONALA: price_00000000000000
-      STRIPE_ASTROGRAMA_PREVIZIONALA: price_00000000000000
-      STRIPE_EVENIMENT_CONSTELATII: price_00000000000000
+      # Dummy Revolut Pay values — satisfy the zod schema; no charge possible.
+      REVOLUT_PAY_SECRET_KEY: sk_test_dummy_key_for_ci_scan_only
+      REVOLUT_PAY_API_VERSION: 2026-08-17
       # Dummy CORS endpoint pairs — only schema validation; no traffic.
       ASTROLOGY_API_SERVER_DC_PORT: "3101"
       ASTROLOGY_API_SERVER_DC_DNS: ci.local
