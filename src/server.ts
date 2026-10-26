@@ -54,9 +54,9 @@ app.use(morgan(isProduction ? "combined" : "dev"));
 
 // ─── Body parser ─────────────────────────────────────────────
 // 256kb is a hard upper bound for this API. There is deliberately no
-// dedicated raw-body parser for Stripe webhooks: this service does not
-// expose a webhook route at all (Stripe checkout sessions are verified
-// client-side via /session-status), so the small global limit never
+// dedicated raw-body parser for Revolut Pay webhooks: this service does not
+// expose a webhook route at all (Revolut Pay orders are verified
+// client-side via the payment widget), so the small global limit never
 // conflicts with signature verification. If a webhook route is ever
 // added, mount a raw parser for it before this parser instead of
 // raising the global limit — see the security-hardening spec.
