@@ -19,8 +19,11 @@ const envSchema = z.object({
 
   // Revolut Pay credentials — only secret key + API version needed server-side.
   // Public key lives in the frontend config.
+  // Set REVOLUT_PAY_ENVIRONMENT=sandbox to use sandbox-merchant.revolut.com
+  // Default is production (merchant.revolut.com)
   REVOLUT_PAY_SECRET_KEY: z.string().min(1, "REVOLUT_PAY_SECRET_KEY is required"),
   REVOLUT_PAY_API_VERSION: z.string().min(1, "REVOLUT_PAY_API_VERSION is required"),
+  REVOLUT_PAY_ENVIRONMENT: z.enum(["sandbox", "production"]).default("sandbox"),
 
   ASTROLOGY_API_SERVER_DC_PORT: z.coerce
     .number()
