@@ -13,7 +13,14 @@ import { strictRateLimiter } from "../middleware/security.js";
 const router = Router();
 
 // Revolut Merchant API base URL
-const REVOLUT_API_BASE = "https://merchant.revolut.com";
+// Revolut Merchant API base URL — the API path is /api/orders, not /v1/orders.
+// The API version is a date string (e.g. 2026-08-17), sent via the
+// Revolut-Api-Version request header.
+// Use sandbox-merchant.revolut.com for testing, merchant.revolut.com for production.
+const REVOLUT_API_BASE =
+  env.REVOLUT_PAY_ENVIRONMENT === "sandbox"
+    ? "https://sandbox-merchant.revolut.com"
+    : "https://merchant.revolut.com";
 const REVOLUT_API_VERSION = env.REVOLUT_PAY_API_VERSION;
 
 // Checkout body validation.
@@ -60,7 +67,7 @@ async function createRevolutOrder(
   currency: string,
   metadata: Record<string, string>
 ): Promise<string> {
-  const response = await fetch(`${REVOLUT_API_BASE}/v1/orders`, {
+  const response = await fetch(`${REVOLUT_API_BASE}/api/orders`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${env.REVOLUT_PAY_SECRET_KEY}`,
