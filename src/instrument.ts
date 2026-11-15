@@ -10,19 +10,23 @@ if (env.PAYMENT_API_SENTRY_DSN) {
   Sentry.init({
     dsn: env.PAYMENT_API_SENTRY_DSN,
     environment: env.NODE_ENV,
+    release: env.SENTRY_RELEASE || undefined,
 
     sampleRate: 1.0,
     includeLocalVariables: true,
     maxBreadcrumbs: 100,
 
     tracesSampler: (samplingContext) => {
+      // Sample 100% of revenue-critical endpoints (order creation and
+      // Revolut webhooks); dashboards and health checks stay sampled down.
+      const name = samplingContext?.transactionContext?.name ?? "";
+      if (name.includes("/create-order") || name.includes("/webhook")) {
+        return 1.0;
+      }
       if (samplingContext?.transactionContext?.name?.includes("/health")) {
         return 0.01;
       }
-      if (samplingContext?.transactionContext?.name?.includes("/api/")) {
-        return isProduction ? 0.2 : 1.0;
-      }
-      return isProduction ? 0.1 : 1.0;
+      return isProduction ? 0.2 : 1.0;
     },
 
     tracePropagationTargets: [

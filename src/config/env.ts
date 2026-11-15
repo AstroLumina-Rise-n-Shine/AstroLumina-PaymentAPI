@@ -15,6 +15,10 @@ const envSchema = z.object({
     .url()
     .min(1, "PAYMENT_API_SENTRY_DSN is required"),
 
+  // Set by the Docker build (SENTRY_RELEASE build-arg): ties runtime
+  // events to the release whose source maps CI uploaded.
+  SENTRY_RELEASE: z.string().optional(),
+
   CORS_ORIGINS: z.string().optional(),
 
   // Revolut Pay credentials — only secret key + API version needed server-side.
