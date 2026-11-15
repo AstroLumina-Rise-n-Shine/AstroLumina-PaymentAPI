@@ -5,7 +5,6 @@ import type { Request, Response, NextFunction } from "express";
 
 import {
   createError,
-  globalErrorHandler,
   notFoundHandler,
   payloadTooLargeHandler,
 } from "../src/middleware/error-handler.js";
